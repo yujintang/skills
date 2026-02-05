@@ -20,7 +20,7 @@ const message = `执行以下命令并发送其输出作为提醒：cd ${skillDi
 const args = [
   'cron', 'add',
   '--name', 'Relation Keeper 扫描',
-  '--every', '900000',
+  '--every', '15m',
   '--tz', tz,
 ];
 
