@@ -1,74 +1,39 @@
 #!/usr/bin/env node
 /**
- * 安装脚本：创建数据目录、初始化数据文件、配置定时扫描任务
- * 在 skill 安装时自动运行（通过 package.json postinstall）
+ * 初始化脚本：创建数据目录和空数据文件
+ * 首次使用时运行：npm run init
  */
-const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { initDataDir } = require('./utils.js');
 
-const skillDir = path.resolve(__dirname, '..');
-
-// 创建默认数据目录与空数据文件
-const dataDir = initDataDir();
-console.log('✓ 数据目录已初始化:', dataDir);
-
-// 自动配置 HEARTBEAT.md
-const workspaceDir = process.env.OPENCLAW_WORKSPACE || path.join(path.dirname(path.dirname(skillDir)), 'workspace');
-const heartbeatFile = path.join(workspaceDir, 'HEARTBEAT.md');
-const heartbeatContent = `# 心跳任务：检查关系提醒
-1. 运行关系扫描：cd ${skillDir} && node scripts/scan.js
-2. 如有输出，直接显示提醒内容
-3. 如无输出，回复 HEARTBEAT_OK
-`;
-
-try {
-  let existingContent = '';
-  if (fs.existsSync(heartbeatFile)) {
-    existingContent = fs.readFileSync(heartbeatFile, 'utf-8');
-  }
-
-  // 检查是否已经包含关系扫描的配置
-  if (!existingContent.includes('关系扫描')) {
-    const newContent = existingContent.trim()
-      ? `${existingContent.trim()}\n\n${heartbeatContent}`
-      : heartbeatContent;
-    fs.writeFileSync(heartbeatFile, newContent, 'utf-8');
-    console.log('✓ HEARTBEAT.md 已更新：添加关系扫描任务');
-  }
-} catch (err) {
-  console.warn('⚠ 无法更新 HEARTBEAT.md，请手动添加关系扫描任务');
-}
-const tz = process.env.RELATION_KEEPER_TZ || 'Asia/Shanghai';
-
-const channel = process.env.RELATION_KEEPER_CHANNEL;
-const message = `执行以下命令并发送其输出作为提醒：cd ${skillDir} && node scripts/scan.js`;
-
-const args = [
-  'cron', 'add',
-  '--name', 'Relation Keeper 扫描',
-  '--every', '15m',
-  '--tz', tz,
-];
-
-if (channel && channel.includes(':')) {
-  const [ch, to] = channel.split(':', 2);
-  args.push('--session', 'isolated', '--message', message, '--announce', '--channel', ch, '--to', to);
-} else {
-  args.push('--session', 'main', '--system-event', message, '--wake', 'now');
+function getDataDir() {
+  return process.env.RELATION_KEEPER_DATA || path.join(__dirname, '..', 'data');
 }
 
-try {
-  const result = spawnSync('openclaw', args, { stdio: 'inherit' });
-
-  if (result.status !== 0) {
-    throw new Error(`openclaw 退出码: ${result.status}`);
+function initDataDir() {
+  const dataDir = getDataDir();
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
   }
-  console.log('✓ 定时任务已配置：每 15 分钟扫描一次关系提醒');
-  console.log(channel ? '  提醒将推送到配置的渠道' : '  提醒将推送到当前聊天');
-} catch (err) {
-  console.warn('⚠ 配置定时任务失败（可稍后手动执行 npm run install:cron）');
-  console.warn('  请确保 OpenClaw 已安装且 Gateway 已启动');
-  // 不 exit(1)，避免 npm install 整体失败
+
+  const files = {
+    'portraits.json': { people: {} },
+    'past_events.json': { events: [] },
+  };
+
+  for (const [filename, content] of Object.entries(files)) {
+    const filepath = path.join(dataDir, filename);
+    if (!fs.existsSync(filepath)) {
+      fs.writeFileSync(filepath, JSON.stringify(content, null, 2), 'utf-8');
+    }
+  }
+
+  return dataDir;
 }
+
+function main() {
+  const dataDir = initDataDir();
+  console.log('✓ 数据目录已初始化:', dataDir);
+}
+
+if (require.main === module) main();

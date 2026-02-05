@@ -1,11 +1,9 @@
 {
   "name": "relation-keeper-skill",
-  "version": "1.0.0",
-  "description": "关系维护 skill：维护、记忆、提醒社交关系",
+  "version": "2.0.0",
+  "description": "关系记录 skill：记录和查询社交关系、肖像、历史事件",
   "private": true,
   "scripts": {
-    "install:cron": "node scripts/install.js",
-    "postinstall": "node scripts/install.js",
     "init": "node -e \"require('./scripts/utils.js').initDataDir(); console.log('✓ 数据目录已初始化:', require('./scripts/utils.js').getDataDir());\""
   },
   "engines": {

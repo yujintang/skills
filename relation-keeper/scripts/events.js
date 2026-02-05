@@ -6,11 +6,6 @@ function loadPastEvents() {
   return data.events || [];
 }
 
-function loadFutureEvents() {
-  const data = loadJson('future_events');
-  return data.events || [];
-}
-
 function addPastEvent(personIds, eventType, date, summary, details = '') {
   const evt = {
     id: generateId('pevt'),
@@ -28,44 +23,8 @@ function addPastEvent(personIds, eventType, date, summary, details = '') {
   return evt;
 }
 
-function addFutureEvent(personIds, eventType, date, time, summary, reminderRule = 'appointment') {
-  const evt = {
-    id: generateId('fevt'),
-    personIds,
-    type: eventType,
-    date,
-    time: time || null,
-    summary,
-    reminderRule,
-    createdAt: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
-  };
-  const data = loadJson('future_events');
-  const events = data.events || [];
-  events.push(evt);
-  saveJson('future_events', { events });
-  return evt;
-}
-
 function queryPastByPerson(personName) {
   return loadPastEvents().filter((e) => (e.personIds || []).includes(personName));
-}
-
-function queryFuture(days = 14) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const end = new Date(today);
-  end.setDate(end.getDate() + days);
-
-  return loadFutureEvents()
-    .filter((e) => {
-      try {
-        const d = new Date(e.date);
-        return d >= today && d <= end;
-      } catch {
-        return false;
-      }
-    })
-    .sort((a, b) => a.date.localeCompare(b.date));
 }
 
 function parseArgs() {
@@ -86,7 +45,7 @@ function main() {
   const { cmd, options } = parseArgs();
   const persons = (s) => (s || '').split(',').map((x) => x.trim()).filter(Boolean);
 
-  if (cmd === 'past-add') {
+  if (cmd === 'add') {
     const evt = addPastEvent(
       persons(options.persons),
       options.type,
@@ -95,28 +54,17 @@ function main() {
       options.details || ''
     );
     console.log(JSON.stringify(evt, null, 2));
-  } else if (cmd === 'future-add') {
-    const evt = addFutureEvent(
-      persons(options.persons),
-      options.type,
-      options.date,
-      options.time,
-      options.summary,
-      options.rule || 'appointment'
-    );
-    console.log(JSON.stringify(evt, null, 2));
-  } else if (cmd === 'past-query') {
+  } else if (cmd === 'query') {
     const person = options.person || process.argv[3];
     if (!person) {
-      console.error('用法: node events.js past-query <姓名>');
+      console.error('用法: node events.js query <姓名>');
       process.exit(1);
     }
     queryPastByPerson(person).forEach((e) => console.log(JSON.stringify(e)));
-  } else if (cmd === 'future-query') {
-    const days = parseInt(options.days || '14', 10);
-    queryFuture(days).forEach((e) => console.log(JSON.stringify(e)));
   } else {
-    console.error('用法: node events.js <past-add|future-add|past-query|future-query> [选项]');
+    console.error('用法: node events.js <add|query> [选项]');
+    console.error('  添加事件: node events.js add --persons "张三,李四" --type 吃饭 --date 2026-01-18 --summary "海底捞聚餐"');
+    console.error('  查询事件: node events.js query --person 张三');
     process.exit(1);
   }
 }
