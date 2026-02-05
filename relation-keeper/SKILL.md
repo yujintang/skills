@@ -128,7 +128,12 @@ metadata:
 
 ### 2.2 定时任务自动配置
 
-安装本 skill 时，执行 `npm install` 会自动运行 `postinstall` 脚本，调用 `node scripts/install.js` 配置定时任务。用户无需手动执行 `openclaw cron add`。
+安装本 skill 时，执行 `npm install` 会自动运行 `postinstall` 脚本，调用 `node scripts/install.js` 配置定时任务。安装脚本会自动完成以下操作：
+
+1. **配置 Cron 任务**：每 15 分钟扫描一次关系提醒
+2. **配置 HEARTBEAT.md**：自动添加关系扫描任务，无需手动编辑
+
+用户无需手动执行 `openclaw cron add` 或编辑 HEARTBEAT.md。
 
 若自动配置失败，可手动运行：
 ```bash
