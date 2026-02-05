@@ -4,6 +4,7 @@
  * 在 skill 安装时自动运行（通过 package.json postinstall）
  */
 const { spawnSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 const { initDataDir } = require('./utils.js');
 
@@ -12,6 +13,33 @@ const skillDir = path.resolve(__dirname, '..');
 // 创建默认数据目录与空数据文件
 const dataDir = initDataDir();
 console.log('✓ 数据目录已初始化:', dataDir);
+
+// 自动配置 HEARTBEAT.md
+const workspaceDir = process.env.OPENCLAW_WORKSPACE || path.join(path.dirname(path.dirname(skillDir)), 'workspace');
+const heartbeatFile = path.join(workspaceDir, 'HEARTBEAT.md');
+const heartbeatContent = `# 心跳任务：检查关系提醒
+1. 运行关系扫描：cd ${skillDir} && node scripts/scan.js
+2. 如有输出，直接显示提醒内容
+3. 如无输出，回复 HEARTBEAT_OK
+`;
+
+try {
+  let existingContent = '';
+  if (fs.existsSync(heartbeatFile)) {
+    existingContent = fs.readFileSync(heartbeatFile, 'utf-8');
+  }
+
+  // 检查是否已经包含关系扫描的配置
+  if (!existingContent.includes('关系扫描')) {
+    const newContent = existingContent.trim()
+      ? `${existingContent.trim()}\n\n${heartbeatContent}`
+      : heartbeatContent;
+    fs.writeFileSync(heartbeatFile, newContent, 'utf-8');
+    console.log('✓ HEARTBEAT.md 已更新：添加关系扫描任务');
+  }
+} catch (err) {
+  console.warn('⚠ 无法更新 HEARTBEAT.md，请手动添加关系扫描任务');
+}
 const tz = process.env.RELATION_KEEPER_TZ || 'Asia/Shanghai';
 
 const channel = process.env.RELATION_KEEPER_CHANNEL;
