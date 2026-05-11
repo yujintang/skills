@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp:*)",
+      "WebFetch(domain:clawhub.ai)",
+      "WebSearch"
+    ]
+  }
+}
